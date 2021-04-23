@@ -1,5 +1,6 @@
 import { prompt } from "inquirer";
-import Mignotte, { Shares }  from './Mignotte'
+import Mignotte  from './Mignotte'
+import { Shares } from "../domain";
 
 export default class MignottePrompter {
     private key?: string;
@@ -44,23 +45,16 @@ export default class MignottePrompter {
             validate: input => !!input,
             default: this.key,
         });
+        this.key = secret;
         const { numOfShares } = await prompt({
             name: 'numOfShares',
             message: 'Enter number of shares to generate:',
             type: 'number',
             validate: input => input > 0,
-            default: 6,
-        });
-        const { threshold } = await prompt({
-            name: 'threshold',
-            message: 'Enter minimum amount of shares to reproduce the secret:',
-            type: 'number',
-            validate: input => input > 0,
-            default: 3,
+            default: 4,
         });
         this.shares = this.mignotte.split(secret);
         console.log(this.shares);
-        console.log(this.mignotte.combine(this.shares));
     }
 
     private async combineShares() {
@@ -81,6 +75,6 @@ export default class MignottePrompter {
             });
             sharesToCombine[i] = shareSecret;
         }
-        console.log(`Key: ${this.mignotte.combine(sharesToCombine)}`);
+        console.log(`Key: ${this.mignotte.combine(this.shares)}`);
     }
 }

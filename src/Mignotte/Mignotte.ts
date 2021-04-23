@@ -1,91 +1,72 @@
+const crt = require('nodejs-chinese-remainder/chinese_remainder_bignum');
 import {randomBytes} from 'crypto';
-import Decimal from 'decimal.js';
+import { Shares } from "../domain";
+import BigNum = require("bignum");
+const bignum = require('bignum');
 
 export default class Mignotte {
-    private readonly Q = [179424673, 179426549, 179428399, 179430413, 179432233, 179434033];
-    private readonly K = 3;
-    private a = 1;
-    private b = 1;
-    private M = 1;
-    private bitsPerSecret: number;
-    private bytesPerSecret: number;
-
-    constructor() {
-        Decimal.set({precision: 1})
-        this.Q.slice(-2).forEach((val) => this.a *= val);
-        this.a++;
-        this.Q.slice(0, 3).forEach((val) => this.b *= val);
-        this.b--;
-        this.Q.forEach((val) => this.M *= val);
-        this.bitsPerSecret = Math.log(this.b - this.a);
-        this.bytesPerSecret = this.bitsPerSecret / 8;
-    }
+    private PRIMES :bigint[] = [bignum('635057963244817117'), bignum('850387946977755721'), bignum('956529639129297449'), bignum('1123841641802976919')]
+    private rand: bigint = bignum('329191744197430547917479608607820738907969788693828749');
 
     public generateRandomKey(length: number) {
         return randomBytes(length).toString('hex');
     }
 
-    public split(key: string): Shares {
-        let keyDecimal = this.keyToDecimal(key);
-        keyDecimal += this.a;
-        return this.Q.reduce((acc, val, i) => ({
-            ...acc,
-            [i + 1]: keyDecimal % val,
-        }), {});
-    }
-
-    private keyToDecimal(key: string): number {
-        let num = 0;
-        for (let i = 0; i < this.bytesPerSecret; i++) {
-            num *= 256;
-            if (i < key.length) {
-                num += key.charCodeAt(i);
-            }
+    public split(hexKey: string): Shares {
+        let key = bignum(hexKey);
+        key = key.add(this.rand);
+        const shares: BigNum[] = [];
+        for (let prime of this.PRIMES) {
+            shares.push(bignum.mod(key, prime));
         }
-        return num;
+        return shares.reduce((acc, val, index) => ({...acc, [index+1]: val.toString() }), {})
     }
 
     public combine(shares: Shares): string {
-        let S = 0;
-        const shareNumbers: number[] = Object.values(shares);
-        for (let i = 0; i < this.K; i++) {
-            const mprime = this.M % this.Q[i];
-            S += (shareNumbers[i] * this.exteuclid(this.Q[i], mprime) * mprime);
-        }
-        S -= this.a;
-        S %= this.b;
-        return this.numberToKey(S);
+        const intShares = Object.values(shares).map(string => bignum(string));
+        const reminders = [intShares[0], intShares[1], intShares[2]]
+        const modules = [this.PRIMES[0], this.PRIMES[1], this.PRIMES[2]]
+        const res = crt(reminders, modules);
+        return res.sub(this.rand).toString();
     }
 
-    private exteuclid(u1: number, v1: number) {
-        const u = [1, 0, u1];
-        const v = [0, 1, v1];
-        const t = [];
-        while (v[2] !== 0) {
-            const q = u[2] / v[2];
-            for (let i = 0; i < 3; i++) {
-                t[i] = u[i] - q * v[i];
-            }
-            for (let i = 0; i < 3; i++) {
-                u[i] = v[i];
-            }
-            for (let i = 0; i < 3; i++) {
-                v[i] = t[i];
-            }
+    public crt(reminders: bigint[], modules: bigint[]): bigint {
+        let p = BigInt(1);
+        let p1 = BigInt(1);
+        let prod = BigInt(1);
+        let sm = BigInt(0);
+        for (let i = 0; i < modules.length; i++) {
+            prod = prod * modules[i];
         }
-        return u[1];
+        for (let i = 0; i < modules.length; i++) {
+            p = prod / modules[i];
+            sm += reminders[i] * this.mul_inv(p, modules[i] * p)
+        }
+        return sm % prod;
     }
 
-    private numberToKey(number: number): string {
-        let string = '';
-        while (number > 0) {
-            string += String.fromCharCode(number % 256);
-            number /= 256;
+    private mul_inv(a1: bigint, b1: bigint): bigint {
+        let a = a1;
+        let b = b1;
+        let b0 = b;
+        let x0 = BigInt(0);
+        let x1 = BigInt(1);
+        let q, tmp;
+        if (b.toString() === '1') { return b }
+        while (a > 1) {
+            try {
+                q = a / b;
+            } catch (e) { }
+            tmp = a;
+            a = b;
+            b = tmp % b;
+            tmp = x0;
+            x0 = x1 - (q * x0);
+            x1 = tmp;
         }
-        return string;
+        if (x1 < 0) {
+            x1 += b0;
+        }
+        return x1;
     }
-}
-
-export interface Shares {
-    [key: number]: number;
 }
