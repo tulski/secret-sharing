@@ -4,21 +4,21 @@ import Decimal from 'decimal.js';
 export default class Mignotte {
     private readonly Q = [179424673, 179426549, 179428399, 179430413, 179432233, 179434033];
     private readonly K = 3;
-    private a = new Decimal(1);
-    private b = new Decimal(1);
-    private M = new Decimal(1);
-    private bitsPerSecret: Decimal;
-    private bytesPerSecret: Decimal;
+    private a = 1;
+    private b = 1;
+    private M = 1;
+    private bitsPerSecret: number;
+    private bytesPerSecret: number;
 
     constructor() {
         Decimal.set({precision: 1})
-        this.Q.slice(-2).forEach((val) => this.a = this.a.mul(val));
-        this.a.add(1);
-        this.Q.slice(0, 3).forEach((val) => this.b = this.b.mul(val));
-        this.b.sub(1);
-        this.Q.forEach((val) => this.M = this.M.mul(val));
-        this.bitsPerSecret = Decimal.log2(Decimal.sub(this.b, this.a));
-        this.bytesPerSecret = this.bitsPerSecret.div(8);
+        this.Q.slice(-2).forEach((val) => this.a *= val);
+        this.a++;
+        this.Q.slice(0, 3).forEach((val) => this.b *= val);
+        this.b--;
+        this.Q.forEach((val) => this.M *= val);
+        this.bitsPerSecret = Math.log(this.b - this.a);
+        this.bytesPerSecret = this.bitsPerSecret / 8;
     }
 
     public generateRandomKey(length: number) {
@@ -27,35 +27,34 @@ export default class Mignotte {
 
     public split(key: string): Shares {
         let keyDecimal = this.keyToDecimal(key);
-        keyDecimal = keyDecimal.add(this.a);
+        keyDecimal += this.a;
         return this.Q.reduce((acc, val, i) => ({
             ...acc,
-            [i + 1]: Decimal.mod(keyDecimal, val).toString(),
+            [i + 1]: keyDecimal % val,
         }), {});
     }
 
-    private keyToDecimal(key: string): Decimal {
-        let num = new Decimal(0);
-        for (let i = 0; i < this.bytesPerSecret.toNumber(); i++) {
-            num = num.mul(256);
+    private keyToDecimal(key: string): number {
+        let num = 0;
+        for (let i = 0; i < this.bytesPerSecret; i++) {
+            num *= 256;
             if (i < key.length) {
-                num = num.add(key.charCodeAt(i))
+                num += key.charCodeAt(i);
             }
         }
         return num;
     }
 
     public combine(shares: Shares): string {
-        let S = new Decimal(0);
-        const shareNumbers: string [] = Object.values(shares);
+        let S = 0;
+        const shareNumbers: number[] = Object.values(shares);
         for (let i = 0; i < this.K; i++) {
-            const mprime = Decimal.div(this.M, this.Q[i]);
-            S = Decimal.add(S, Decimal.mul(Decimal.mul(shareNumbers[i], this.exteuclid(this.Q[i], mprime.toNumber())), mprime))
+            const mprime = this.M % this.Q[i];
+            S += (shareNumbers[i] * this.exteuclid(this.Q[i], mprime) * mprime);
         }
-        S = S.sub(this.a);
-        S = S.mod(this.b);
-
-        return this.decimalToKey(S);
+        S -= this.a;
+        S %= this.b;
+        return this.numberToKey(S);
     }
 
     private exteuclid(u1: number, v1: number) {
@@ -77,18 +76,16 @@ export default class Mignotte {
         return u[1];
     }
 
-    private decimalToKey(decimal: Decimal): string {
-        let x = decimal;
+    private numberToKey(number: number): string {
         let string = '';
-        while (x.greaterThan(0)) {
-            string += String.fromCharCode(Decimal.mod(x,256).toNumber());
-            x = x.div(256);
-
+        while (number > 0) {
+            string += String.fromCharCode(number % 256);
+            number /= 256;
         }
         return string;
     }
 }
 
 export interface Shares {
-    [key: number]: string;
+    [key: number]: number;
 }
