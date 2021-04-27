@@ -1,5 +1,6 @@
-import {randomBytes} from 'crypto';
+import { randomBytes } from 'crypto';
 import { EXP, LOG } from '../../resources'
+import {Shares} from "../domain";
 
 export default class Shamir {
     private readonly utf8Encoder = new TextEncoder();
@@ -110,8 +111,4 @@ export default class Shamir {
     private div(a: number, b: number) {
         return this.mul(a, EXP[255 - LOG[b]]);
     }
-}
-
-export interface Shares {
-    [key: string]: string;
 }

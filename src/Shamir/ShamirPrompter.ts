@@ -1,5 +1,6 @@
 import { prompt } from "inquirer";
-import Shamir, { Shares }  from './Shamir'
+import Shamir from './Shamir'
+import { Shares } from "../domain";
 
 export default class ShamirPrompter {
     private key?: string;

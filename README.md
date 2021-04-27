@@ -1,5 +1,7 @@
 # Secret Sharing
 
+![Example](./static/example.png)
+
 ### Installation
 
 ```

@@ -1,9 +1,8 @@
 import { prompt } from 'inquirer';
 import * as figlet from 'figlet';
+const clear = require('clear');
 import ShamirPrompter from "./Shamir/ShamirPrompter";
 import MignottePrompter from "./Mignotte/MignottePrompter";
-
-const clear = require('clear');
 
 export async function mainMenu() {
     const answer = await prompt({

@@ -13,10 +13,9 @@ export default class MignottePrompter {
             message: 'Mignotte Secret Sharing',
             type: 'list',
             choices: [
-                {name: '1) Generate a random key', value: () => this.generateRandomKey()},
-                {name: '2) Split a key to shares', value: () => this.splitSecret()},
-                {name: '3) Combine shares', value: () => this.combineShares()},
-                {name: '4) Back', value: () => false},
+                {name: '1) Split a key to shares', value: () => this.splitSecret()},
+                {name: '2) Combine shares', value: () => this.combineShares()},
+                {name: '3) Back', value: () => false},
                 {name: 'Exit', value: () => process.exit(0)},
             ],
         });
@@ -25,34 +24,14 @@ export default class MignottePrompter {
         }
     }
 
-    private async generateRandomKey() {
-        const { length } = await prompt({
-            name: 'length',
-            message: 'Enter key length:',
-            type: 'number',
-            validate: input => !!input,
-            default: 10,
-        });
-        this.key = this.mignotte.generateRandomKey(length);
-        console.log(`Key: ${this.key}`);
-    }
-
     private async splitSecret() {
         const { secret } = await prompt({
             name: 'secret',
-            message: 'Secret to split:',
-            type: 'input',
-            validate: input => !!input,
+            message: 'Number secret to split:',
+            type: 'number',
             default: this.key,
         });
         this.key = secret;
-        const { numOfShares } = await prompt({
-            name: 'numOfShares',
-            message: 'Enter number of shares to generate:',
-            type: 'number',
-            validate: input => input > 0,
-            default: 4,
-        });
         this.shares = this.mignotte.split(secret);
         console.log(this.shares);
     }

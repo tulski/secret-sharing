@@ -1,5 +1,5 @@
 {
-  "name": "secret_sharing",
+  "name": "secret-sharing",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,8 +12,6 @@
   "devDependencies": {
     "@types/bignum": "^0.0.29",
     "@types/clear": "^0.1.1",
-    "@types/crypto-random-string": "^2.0.0",
-    "@types/decimal.js": "^7.4.0",
     "@types/figlet": "^1.5.1",
     "@types/inquirer": "^7.3.1",
     "ts-node": "^9.1.1",
@@ -23,11 +21,8 @@
     "bignum": "^0.13.1",
     "clear": "^0.1.0",
     "crypto": "^1.0.1",
-    "crypto-random-string": "^4.0.0",
-    "decimal.js": "^10.2.1",
     "figlet": "^1.5.0",
     "inquirer": "^8.0.0",
-    "nodejs-chinese-remainder": "^0.0.7",
-    "secrets.js-grempe": "^2.0.0"
+    "nodejs-chinese-remainder": "^0.0.7"
   }
 }
